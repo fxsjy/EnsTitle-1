@@ -15,10 +15,10 @@ async function connect() {
 }
 
 async function switchToChain(chainId) {
-  if (chainId === REPLIT_CHAIN_ID) {
+  if (chainId === 4) {
     // this will add the network if it hasn't been already.
     // otherwise it'll ask to switch
-    switchToReplitTestnet();
+    swithchToRinkebyTestnet();
   } else {
     window.ethereum.request({
       method: "wallet_switchEthereumChain",
@@ -27,22 +27,12 @@ async function switchToChain(chainId) {
   }
 }
 
-function switchToReplitTestnet() {
+function swithchToRinkebyTestnet() {
   ethereum.request({
-    method: "wallet_addEthereumChain",
+    method: "wallet_switchEthereumChain",
     params: [
       {
-        chainId: "0x7265706c",
-        chainName: "Replit Testnet",
-        rpcUrls: ["https://eth.replit.com"],
-        iconUrls: [
-          "https://upload.wikimedia.org/wikipedia/commons/b/b2/Repl.it_logo.svg",
-        ],
-        nativeCurrency: {
-          name: "Replit ETH",
-          symbol: "RΞ",
-          decimals: 18,
-        },
+        chainId: "0x4",
       },
     ],
   });
@@ -443,7 +433,7 @@ export default function App() {
           padding: 40,
         }}
       >
-        <h1 style={{ textAlign: "center" }}>Replit 🤝 Ethereum</h1>
+        <h1 style={{ textAlign: "center" }}>X-file of web3 universe</h1>
         <a
           style={{ whiteSpace: "nowrap" }}
           href="https://metamask.io/"
@@ -525,7 +515,7 @@ export default function App() {
             className="main-title"
             style={{ paddingBottom: "var(--space-8)" }}
           >
-            Replit 🤝 Ethereum
+            X-file of web3 universe
           </h1>
           {walletAddress && <ChainInfo chainId={chainId} />}
         </VStack>
@@ -552,7 +542,10 @@ export default function App() {
           </button>
         )}
       </HStack>
-
+      <HStack>
+            <EnsProfile chainId={chainId} walletAddress={walletAddress}>
+            </EnsProfile>
+      </HStack>
       <Divider style={{ marginBottom: "var(--space-24)" }} />
 
       {/* DEPLOYMENT */}
@@ -654,7 +647,7 @@ function FaucetLink({ chainId, walletAddress }) {
 
   const { faucets } = chainById(chainId);
   return faucets.length > 0 ? (
-    <a target="_blank" rel="noopener" href={faucets[0]}>
+    <a target="_blank" rel="noopener" href="https://faucets.chain.link/">
       Get Ether for testing{" "}
     </a>
   ) : null;
@@ -703,6 +696,19 @@ function Balance({ walletAddress, chainId }) {
   );
 }
 
+function EnsProfile({ walletAddress, chainId }) {
+  const ens = lookEns(walletAddress, chainId);
+  if (ens === null) {
+    return <span>Checking ENS...</span>;
+  }
+
+  return (
+    <span style={{ marginRight: "var(--space-8)", whiteSpace: "nowrap" }}>
+       <h2>{ens} </h2>
+    </span>
+  );
+}
+
 function ChainInfo({ chainId }) {
   const { name } = chainById(chainId);
 
@@ -731,7 +737,7 @@ function ChainInfo({ chainId }) {
       </HStack>
       {chainId === 1 && (
         <span
-          onClick={switchToReplitTestnet}
+          onClick={swithchToRinkebyTestnet}
           style={{
             color: "var(--accent-warning-dimmer)",
             textDecoration: "underline",
@@ -740,7 +746,7 @@ function ChainInfo({ chainId }) {
             maxWidth: "240px",
           }}
         >
-          Switch to a test network via MetaMask 🦊
+          Switch to a Rinkeby via MetaMask 🦊
         </span>
       )}
     </VStack>
@@ -915,7 +921,7 @@ function ContractUI({
   chainIsActive,
   chainId,
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   // store the last results in memory.
   const [lastResults, setLastResults] = useState({});
 
@@ -1344,6 +1350,31 @@ function useBalance(address, chainId) {
   }, [address, chainId]);
 
   return balance;
+}
+
+function lookEns(address, chainId) {
+  const [ens, setENS] = useState(null);
+
+  useEffect(() => {
+    let fetchedENS = setENS;
+    function check() {
+      const provider = new ethers.providers.Web3Provider(ethereum);
+      provider.lookupAddress(address).then(
+        function(domain) {
+          console.log("Addr: " + address );
+          console.log("Name: " + domain );
+          fetchedENS(domain);
+        }
+      );
+    }
+    check();
+    const interval = setInterval(check, 1000);
+    return () => {
+      clearInterval(interval);
+      fetchedENS = null;
+    };
+  }, [address, chainId]);
+  return ens;
 }
 
 function useChainId() {
